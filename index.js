@@ -108,11 +108,18 @@ app.use(require("cors")())
 const {pathLoss, radioHorizon} = require('@softroles/propagation')
 
 app.get('/calculator/api/v1/propagation/pathloss', function (req, res) {
-  const freq = parseInt(req.query.freq)
-  const dist = parseInt(req.query.dist)
-  res.send(pathLoss(freq,dist))
+  const freq = parseInt(req.query.freq) || 0 
+  const dist = parseInt(req.query.dist) || 0
+  //console.log(freq)
+  //console.log(dist)
+  //console.log(parseInt(String(pathLoss(freq,dist))))
+  res.send(''+pathLoss(freq,dist))
 });
 
+app.get('/calculator/api/v1/propagation/radiohorizon', function (req, res) {
+  const h = parseInt(req.query.h) || 0 
+  res.send(''+radioHorizon(h))
+});
 //=============================================================================
 // start service
 //=============================================================================

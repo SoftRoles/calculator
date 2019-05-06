@@ -7,6 +7,7 @@ const assert = require('assert')
 const session = require('express-session');
 const mongodbSessionStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
+const { noCache } = require('helmet');
 
 //-------------------------------------
 // arguments
@@ -93,6 +94,7 @@ app.use(require('@softroles/authorize-guest')())
 //-------------------------------------
 // common middlewares
 //-------------------------------------
+app.use(noCache());
 app.use(require('morgan')('tiny'));
 app.use(require('body-parser').json())
 app.use(require('body-parser').urlencoded({ extended: true }));

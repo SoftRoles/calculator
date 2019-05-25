@@ -122,6 +122,16 @@ app.get('/calculator/api/v1/propagation/radiohorizon', function (req, res) {
   const h = parseInt(req.query.h) || 0 
   res.send(''+radioHorizon(h))
 });
+app.get('/calculator/api/:module/:function', function (req, res) {
+  console.log(req.params.module)
+  console.log(req.params.function)
+  console.log(req.query)
+  req.query = {function: req.params.function, args: req.query}
+  mongodb.db("modules").collection(req.params.module).insertOne(req.query, function (err, r) {
+    if (err) res.send({ error: err })
+    else res.send(r.insertedId)
+  });
+});
 //=============================================================================
 // start service
 //=============================================================================

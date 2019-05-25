@@ -8,6 +8,7 @@ const session = require('express-session');
 const mongodbSessionStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
 const { noCache } = require('helmet');
+const { spawn } = require('child_process');
 
 //-------------------------------------
 // arguments
@@ -123,26 +124,11 @@ app.get('/calculator/api/v1/propagation/radiohorizon', function (req, res) {
   res.send(''+radioHorizon(h))
 });
 app.get('/calculator/api/:module/:function', function (req, res) {
-  //console.log(req.params.module)
-  //console.log(req.params.function)
-  //console.log(req.query)
-  req.query = {function: req.params.function, args: req.query}
-  mongodb.db("modules").collection(req.params.module).insertOne(req.query, function (err, r) {
-    if (err) res.send({ error: err })
-    else {
-      const changeStream =  mongodb.db("modules").collection(req.params.module).watch({ fullDocument: 'updateLookup' })
-      changeStream.on('change', event => {
-        //console.log(event)
-        if(event.operationType == 'update'){
-          //console.log(event.fullDocument)
-          //console.log(event.fullDocument.output)
-          res.send(String(event.fullDocument.output))
-          changeStream.close()
-        }
-      })
-    
-    }//res.send(r.insertedId)
+  const ls = spawn('pathloss', ['1', '3']);
+  ls.stdout.on('data', (data) => {
+    res.send(`stdout: ${data}`);
   });
+
 });
 //=============================================================================
 // start service

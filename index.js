@@ -7,8 +7,12 @@ const assert = require('assert')
 const session = require('express-session');
 const mongodbSessionStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
-const { noCache } = require('helmet');
-const { spawn } = require('child_process');
+const {
+  noCache
+} = require('helmet');
+const {
+  spawn
+} = require('child_process');
 
 //-------------------------------------
 // arguments
@@ -17,7 +21,10 @@ const argParser = new argparse({
   addHelp: true,
   description: 'Numerical calculation service'
 })
-argParser.addArgument(['-p', '--port'], { help: 'Listening port', defaultValue: '3010' })
+argParser.addArgument(['-p', '--port'], {
+  help: 'Listening port',
+  defaultValue: '3010'
+})
 const args = argParser.parseArgs()
 
 //-------------------------------------
@@ -27,7 +34,10 @@ let mongodb;
 const mongoClient = require("mongodb").MongoClient
 const mongoChangeStrem = require("mongodb").ChangeStream
 const mongodbUrl = "mongodb://127.0.0.1:27017"
-mongoClient.connect(mongodbUrl, { poolSize: 10, useNewUrlParser: true }, function (err, client) {
+mongoClient.connect(mongodbUrl, {
+  poolSize: 10,
+  useNewUrlParser: true
+}, function(err, client) {
   assert.equal(null, err);
   mongodb = client;
 });
@@ -47,7 +57,7 @@ var store = new mongodbSessionStore({
 });
 
 // Catch errors
-store.on('error', function (error) {
+store.on('error', function(error) {
   assert.ifError(error);
   assert.ok(false);
 });
@@ -67,14 +77,18 @@ app.use(session(sessionOptions));
 //-------------------------------------
 // authentication
 //-------------------------------------
-passport.serializeUser(function (user, cb) {
+passport.serializeUser(function(user, cb) {
   cb(null, user.username);
 });
 
-passport.deserializeUser(function (username, cb) {
-  mongodb.db("auth").collection("users").findOne({ username: username }, function (err, user) {
+passport.deserializeUser(function(username, cb) {
+  mongodb.db("auth").collection("users").findOne({
+    username: username
+  }, function(err, user) {
     if (err) return cb(err)
-    if (!user) { return cb(null, false); }
+    if (!user) {
+      return cb(null, false);
+    }
     return cb(null, user);
   });
 });
@@ -82,15 +96,20 @@ passport.deserializeUser(function (username, cb) {
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use(require('@softroles/authorize-bearer-token')(function (token, cb) {
-  mongodb.db("auth").collection("users").findOne({ token: token }, function (err, user) {
+app.use(require('@softroles/authorize-bearer-token')(function(token, cb) {
+  mongodb.db("auth").collection("users").findOne({
+    token: token
+  }, function(err, user) {
     if (err) return cb(err)
-    if (!user) { return cb(null, false); }
+    if (!user) {
+      return cb(null, false);
+    }
     return cb(null, user);
   });
 }))
 
 app.use(require('@softroles/authorize-guest')())
+app.use(require('@softroles/parse-query-string')())
 
 //-------------------------------------
 // common middlewares
@@ -98,7 +117,9 @@ app.use(require('@softroles/authorize-guest')())
 app.use(noCache());
 app.use(require('morgan')('tiny'));
 app.use(require('body-parser').json())
-app.use(require('body-parser').urlencoded({ extended: true }));
+app.use(require('body-parser').urlencoded({
+  extended: true
+}));
 app.use(require("cors")())
 
 //=============================================================================
@@ -108,31 +129,17 @@ app.use(require("cors")())
 //-----------------------------------------------------------------------------
 // propagation
 //-----------------------------------------------------------------------------
-const {pathLoss, radioHorizon} = require('@softroles/propagation')
+const propagation = require('@softroles/propagation')
 
-app.get('/calculator/api/v1/propagation/pathloss', function (req, res) {
-  const freq = parseFloat(req.query.freq) || 0 
-  const dist = parseFloat(req.query.dist) || 0
-  //console.log(freq)
-  //console.log(dist)
-  //console.log(parseInt(String(pathLoss(freq,dist))))
-  res.send(''+pathLoss(freq,dist))
+app.get('/calculator/api/propagation/:func', function(req, res) {
+  res.send({
+    result: propagation[req.params.func](req.query)
+  })
 });
 
-app.get('/calculator/api/v1/propagation/radiohorizon', function (req, res) {
-  const h = parseFloat(req.query.h) || 0 
-  res.send(''+radioHorizon(h))
-});
-app.get('/calculator/api/:module/:function', function (req, res) {
-  const ls = spawn('pathloss', ['1', '3']);
-  ls.stdout.on('data', (data) => {
-    res.send(`stdout: ${data}`);
-  });
-
-});
 //=============================================================================
 // start service
 //=============================================================================
-app.listen(Number(args.port), function () {
+app.listen(Number(args.port), function() {
   console.log(`Service running on http://127.0.0.1:${args.port}`)
 })

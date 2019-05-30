@@ -7,12 +7,8 @@ const assert = require('assert')
 const session = require('express-session');
 const mongodbSessionStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
-const {
-  noCache
-} = require('helmet');
-const {
-  spawn
-} = require('child_process');
+const { noCache } = require('helmet');
+const { spawn } = require('child_process');
 
 //-------------------------------------
 // arguments
@@ -109,7 +105,6 @@ app.use(require('@softroles/authorize-bearer-token')(function(token, cb) {
 }))
 
 app.use(require('@softroles/authorize-guest')())
-app.use(require('@softroles/parse-query-string')())
 
 //-------------------------------------
 // common middlewares
@@ -125,15 +120,22 @@ app.use(require("cors")())
 //=============================================================================
 // api v1
 //=============================================================================
-
-//-----------------------------------------------------------------------------
-// propagation
-//-----------------------------------------------------------------------------
-const propagation = require('@softroles/propagation')
-
-app.get('/calculator/api/propagation/:func', function(req, res) {
-  res.send({
-    result: propagation[req.params.func](req.query)
+app.get('/calculator/api/:func', function(req, res) {
+  let args = []
+  for(key of Object.keys(req.query)){
+    args.push(`--${key}=${req.query[key]}`)
+  }
+  const func = spawn("pathloss", args);
+  let response = { output: "", error: "", exit: null }
+  func.stdout.on('data', data => {
+    response.output += `${data}`
+  })
+  func.stderr.on('data', data => {
+    response.error += `${data}`
+  })
+  func.on('close', code => {
+    response.exit = code
+    res.send(response)
   })
 });
 
